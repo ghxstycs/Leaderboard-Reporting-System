@@ -1,5 +1,7 @@
 Thanks for downloading my Advanced Leaderboard! (Revamped by ghxsty)
 
+Revamp by ghxsty
+
 This asset was originally created by NotHacking on discord. So all credit goes to him!
 
 My version of this system, has report reasons, ban reporting and overall an improved system with almost 0 bugs!
