@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// This was not created by ghxsty (me)
 public class ButtonRed : MonoBehaviour
 {
     public GameObject Object;
