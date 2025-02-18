@@ -1,5 +1,8 @@
 **This Leaderboard system was originally created by NotHacking (discord user)**
 
+# SOON! 
+Still making the final adjustments.
+
 I've made adjustments to the reporting system and to the original Leaderboard, making it MUCH MUCH better, 
 having improving the functions of the Leaderboard and fixing previous bugs from the old one.
 
