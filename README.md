@@ -1,11 +1,12 @@
 **This Leaderboard system was originally created by NotHacking (discord user)**
 
-# SOON! 
-Still making the final adjustments.
-
 # What changed from the original?
 I've made adjustments to the reporting system and to the original Leaderboard, making it MUCH MUCH better, 
 having improving the functions of the Leaderboard and fixing previous bugs from the old one.
+
+# Package
+The package is officially out! Simply import it, and have fun. Make sure to read, the README so you know how to work everything, and so banning can work correctly.
+Make sure to take a look at everything.
 
 # Version 1.0.0
 - Release!
