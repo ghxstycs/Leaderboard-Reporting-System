@@ -1,5 +1,7 @@
 **This Leaderboard system was originally created by NotHacking (discord user)**
 
+**Created by ghxsty**
+
 # MUST READ!
 Once you import you may receive an error about a namespace, open the "Leaderboard" script and at the top
 you'll see "using MonkeyJumpers" and delete that.
