@@ -6,25 +6,35 @@ using TMPro;
 using Photon.Voice.PUN;
 using Photon.VR.Player;
 using System.Text;
+using System.Collections.Generic;
 using System.Collections;
 using PlayFab;
 using PlayFab.ClientModels;
+using MonkeyJumpers; // Remove for other games. MUST REMOVE!
 using MonkeyJumpersButtons; // Remove unless you're using my report button.
+
 
 [RequireComponent(typeof(PhotonView))]
 public class LeaderBoard : MonoBehaviour
 {
     [Header("Fully re-scripted by ghxsty.")]
-    [SerializeField] public TMP_Text[] displaySpot;
-    [SerializeField] public Renderer[] ColorSpot;
-    [SerializeField] public string WebHookURL;
-    [SerializeField] public string BanWebHookURL;
-    [SerializeField] public string RequiredItemID;
-    [SerializeField] public Playfablogin playfablogin;
-    [SerializeField] public string BanDelayString;
+    [Header("Original Created by NotHacking")]
+    [Tooltip("Version 1.1.0 - Improved banning times, added more customizable options.")]
+
+    [Header("Customizable options")]
+    [SerializeField] public TMP_Text[] displaySpot; // The name texts on the board
+    [SerializeField] public Renderer[] ColorSpot; // The color meshes on the board
+    [SerializeField] public string WebHookURL; // Normal Reporting Webhook
+    [SerializeField] public string BanWebHookURL; // Ban reporting webhook
+    [SerializeField] public string KickWebhookURL; // Kick Webhook for when a player is kicked.
+    [SerializeField] public string RequiredItemID; // The item ID for who can use the ban reporting
+    [SerializeField] public List<string> PlayerIDs; // Whomevers playfab player IDs are here have perimission the permission on top of the item ID for ban reporting, and for kick pressing the player must have the kick board in playfab and there player ID.
+    [SerializeField] public Playfablogin playfablogin; // You know this one
+    [SerializeField] public string BanDelayString; // How long it takes to kick the player after them being reported (ban reports)
     private bool hashed;
     private bool Kicked = false;
     private bool BanReported = false;
+
 
     private void Start()
     {
@@ -74,12 +84,12 @@ public class LeaderBoard : MonoBehaviour
 
     private void Update()
     {
-        if (Kicked || BanReported)
+        if (Kicked || BanReported) // Kick/Ban Report check
         {
-            string message = Kicked ? "You have been kicked from the server." : "You have been banned, a staff member reported you.";
+            string message = Kicked ? "You have been kicked from the server." : "You have been banned, a staff member reported you."; // If not kicked it will change to the ban text.
 
             displaySpot[0].color = Color.red;
-            displaySpot[0].text = message;
+            displaySpot[0].text = message; // You can change this if you want, 0 = 1, 1 = 2 and etc. 
 
             PhotonNetwork.Disconnect();
             return; 
@@ -109,25 +119,32 @@ public class LeaderBoard : MonoBehaviour
         }
     }
 
-    public void KickPress(int ButtonNumber)
+   public void KickPress(int ButtonNumber)
+{
+    if (PhotonNetwork.PlayerList.Length >= ButtonNumber - 1)
     {
-        if (PhotonNetwork.PlayerList.Length >= ButtonNumber - 1)
+        if (!PlayerIDs.Contains(playfablogin.MyPlayFabID))
         {
-            Photon.Realtime.Player targetPlayer = PhotonNetwork.PlayerList[ButtonNumber - 1];
+            Debug.Log("You do not have permission to kick players.");
+            return;
+        }
 
-            if (targetPlayer != PhotonNetwork.LocalPlayer)
+        Photon.Realtime.Player targetPlayer = PhotonNetwork.PlayerList[ButtonNumber - 1];
+
+        if (targetPlayer != PhotonNetwork.LocalPlayer)
+        {
+            foreach (PhotonVRPlayer PVRP in FindObjectsOfType<PhotonVRPlayer>())
             {
-                foreach (PhotonVRPlayer PVRP in FindObjectsOfType<PhotonVRPlayer>())
+                if (PVRP.gameObject.GetComponent<PhotonView>().Owner == targetPlayer)
                 {
-                    if (PVRP.gameObject.GetComponent<PhotonView>().Owner == targetPlayer)
-                    {
-                        GetComponent<PhotonView>().RequestOwnership();
-                        GetComponent<PhotonView>().RPC("KickPlayer", PVRP.gameObject.GetComponent<PhotonView>().Owner);
-                    }
+                    GetComponent<PhotonView>().RequestOwnership();
+                    GetComponent<PhotonView>().RPC("KickPlayer", PVRP.gameObject.GetComponent<PhotonView>().Owner);
                 }
             }
         }
     }
+}
+
 
     [PunRPC]
     void KickPlayer()
@@ -138,7 +155,7 @@ public class LeaderBoard : MonoBehaviour
     [PunRPC]
     void BanReportRPC()
     {
-        BanReported = true;
+        BanReported = true; // If this is true the player will be kicked out and the board text will change.
     }
 
     public void Report(int ButtonNumber, string reportReason)
@@ -152,34 +169,41 @@ public class LeaderBoard : MonoBehaviour
             }
             else
             {
-                Debug.Log("You cannot report yourself.");
+                Debug.Log("You cannot report yourself."); // Debug for testing
             }
         }
     }
 
     private void CheckForBanPermission(Photon.Realtime.Player targetPlayer, string reportReason)
+{
+    string targetPlayfabID = targetPlayer.CustomProperties.ContainsKey("PlayfabID") 
+        ? (string)targetPlayer.CustomProperties["PlayfabID"] 
+        : "Unknown ID";
+
+    Debug.Log($"Reporting Player: {PhotonNetwork.LocalPlayer.NickName}, Target Player: {targetPlayer.NickName}, Target PlayFab ID: {targetPlayfabID}, Reason: {reportReason}");
+
+    if (!PlayerIDs.Contains(playfablogin.MyPlayFabID))
     {
-        string targetPlayfabID = targetPlayer.CustomProperties.ContainsKey("PlayfabID") 
-            ? (string)targetPlayer.CustomProperties["PlayfabID"] 
-            : "Unknown ID";
-
-        Debug.Log($"Reporting Player: {PhotonNetwork.LocalPlayer.NickName}, Target Player: {targetPlayer.NickName}, Target PlayFab ID: {targetPlayfabID}, Reason: {reportReason}");
-
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
-        {
-            bool hasBanItem = result.Inventory.Exists(item => item.ItemId == RequiredItemID);
-            
-            if (hasBanItem)
-            {
-                StartCoroutine(BanAfterDelay(targetPlayer, targetPlayfabID, reportReason));
-            }
-            else
-            {
-                SendToWebhook($"{targetPlayer.NickName} (PlayFab ID: {targetPlayfabID}) was reported by {PhotonNetwork.LocalPlayer.NickName} (PlayFab ID: {playfablogin.MyPlayFabID}) for {reportReason}.", WebHookURL);
-            }
-        },
-        error => Debug.LogError("Error checking inventory: " + error.ErrorMessage));
+        Debug.Log("You do not have permission to ban players.");
+        return;
     }
+
+    PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
+    {
+        bool hasBanItem = result.Inventory.Exists(item => item.ItemId == RequiredItemID);
+        
+        if (hasBanItem)
+        {
+            StartCoroutine(BanAfterDelay(targetPlayer, targetPlayfabID, reportReason));
+        }
+        else
+        {
+            SendToWebhook($"{targetPlayer.NickName} (PlayFab ID: {targetPlayfabID}) was reported by {PhotonNetwork.LocalPlayer.NickName} (PlayFab ID: {playfablogin.MyPlayFabID}) for {reportReason}.", WebHookURL);
+        }
+    },
+    error => Debug.LogError("Error checking inventory: " + error.ErrorMessage));
+}
+
 
     private IEnumerator BanAfterDelay(Photon.Realtime.Player targetPlayer, string targetPlayfabID, string reportReason)
     {
@@ -208,8 +232,8 @@ public class LeaderBoard : MonoBehaviour
 
                 if (view.Owner == PhotonNetwork.LocalPlayer)
                 {
+                    BanPlayer(targetPlayer, reportReason); // Call the ban before the rpc is called.
                     view.RPC("BanReportRPC", PVRP.gameObject.GetComponent<PhotonView>().Owner);
-                    BanPlayer(targetPlayer, reportReason);
                     yield return new WaitForSeconds(0.1f);
                 }
                 else
@@ -226,7 +250,7 @@ public class LeaderBoard : MonoBehaviour
     {
         string targetPlayfabID = targetPlayer.CustomProperties.ContainsKey("PlayfabID") 
             ? (string)targetPlayer.CustomProperties["PlayfabID"] 
-            : "Unknown ID";
+            : "ID Not Found!"; // Most likely this won't work, like showing the reported players ID but I'm trying to figure it out.
 
         GetComponent<PhotonView>().RPC("BanReportRPC", targetPlayer);
 
