@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Collections;
 using PlayFab;
 using PlayFab.ClientModels;
-using MonkeyJumpers; // Remove for other games. MUST REMOVE!
+// Removed MonkeyJumpers to help (:
 using MonkeyJumpersButtons; // Remove unless you're using my report button.
 
 
